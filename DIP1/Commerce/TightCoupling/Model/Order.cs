@@ -1,12 +1,23 @@
-using System;
-using System.Net.Mail;
 using Commerce.TightCoupling.Services;
-using Commerce.Utility;
+using System;
 
 namespace Commerce.TightCoupling.Model
 {
+
+
     public class Order
     {
+        private readonly Cart _cart;
+        private readonly PaymentDetails _paymentDetails;
+        private readonly INotificationService _notifyCustomer;
+
+        public Order(Cart cart, PaymentDetails paymentDetails, INotificationService notifyCustomer)
+        {
+            _cart = cart;
+            _paymentDetails = paymentDetails;
+            _notifyCustomer = notifyCustomer;
+        }
+
         public void Checkout(Cart cart, PaymentDetails paymentDetails, bool notifyCustomer)
         {
             if (paymentDetails.PaymentMethod == PaymentMethod.CreditCard)
@@ -18,33 +29,10 @@ namespace Commerce.TightCoupling.Model
 
             if (notifyCustomer)
             {
-                NotifyCustomer(cart);
+                _notifyCustomer.NotifyCustomer(cart);
             }
         }
 
-        public void NotifyCustomer(Cart cart)
-        {
-            string customerEmail = cart.CustomerEmail;
-            if (!String.IsNullOrEmpty(customerEmail))
-            {
-                using (var message = new MailMessage("orders@somewhere.com", customerEmail))
-                using (var client = new SmtpClient("localhost"))
-                {
-                    message.Subject = "Your order placed on " + DateTime.Now;
-                    message.Body = "Your order details: \n " + cart;
-
-                    try
-                    {
-                        client.Send(message);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error("Problem sending notification email", ex);
-                        throw;
-                    }
-                }
-            }
-        }
 
         public void ReserveInventory(Cart cart)
         {
